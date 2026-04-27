@@ -12,8 +12,8 @@ const TABS = [
 interface Player {
   pos: number
   gracz: string
-  wygrane: number
-  losses: number
+  points: number
+  faculty: string
   ranga: string
 }
 
@@ -35,16 +35,16 @@ export function Leaderboard() {
       const { data: profiles, error } = await supabase
         .from("profiles")
         .select("*")
-        .order("wins", { ascending: false })
+        .order("points", { ascending: false })
         .limit(20)
 
       if (!error && profiles) {
         const ranked = profiles.map((p, i) => ({
           pos: i + 1,
           gracz: p.nickname || "Anonimowy",
-          wygrane: p.wins || 0,
-          losses: p.losses || 0,
-          ranga: getRank(p.wins || 0),
+          points: p.points || 0,
+          faculty: p.faculty || "",
+          ranga: getRank(p.points || 0),
         }))
         setData(ranked)
       }
@@ -102,10 +102,10 @@ export function Leaderboard() {
               Gracz
             </div>
             <div className="col-span-2 font-sans text-xs text-muted-foreground uppercase tracking-widest text-center">
-              Wygrane
+              Punkty
             </div>
             <div className="col-span-3 font-sans text-xs text-muted-foreground uppercase tracking-widest text-right">
-              Przegrane
+              Wydzial
             </div>
           </div>
 
@@ -154,17 +154,17 @@ export function Leaderboard() {
                   </div>
                 </div>
 
-                {/* Wygrane */}
+                {/* Punkty */}
                 <div className="col-span-2 text-center">
                   <span className="font-display font-bold text-neon text-lg text-glow-neon">
-                    {row.wygrane}
+                    {row.points}
                   </span>
                 </div>
 
-                {/* Przegrane */}
+                {/* Wydzial */}
                 <div className="col-span-3 text-right">
-                  <span className="font-display font-bold text-foreground text-lg">
-                    {row.losses}
+                  <span className="font-sans text-sm text-muted-foreground">
+                    {row.faculty}
                   </span>
                 </div>
               </div>
