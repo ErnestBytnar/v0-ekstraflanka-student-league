@@ -3,6 +3,8 @@ import { Barlow_Condensed, Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
+export const dynamic = "force-dynamic"
+
 const barlowCondensed = Barlow_Condensed({
   subsets: ['latin', 'latin-ext'],
   weight: ['400', '600', '700', '800', '900'],

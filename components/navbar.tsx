@@ -1,18 +1,54 @@
 "use client"
 
-import { useState } from "react"
-import { Menu, X, Zap } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Menu, X, Zap, LogOut, Settings } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+import Link from "next/link"
+import Image from "next/image"
 
 const NAV_ITEMS = [
   { label: "Ranking", href: "#ranking" },
   { label: "Kodeks", href: "#kodeks" },
-  { label: "Mapa Spotów", href: "#mapa" },
+  { label: "Mapa Spotow", href: "#mapa" },
   { label: "Szukam Ekipy", href: "#ekipa" },
-  { label: "Mój Profil", href: "#profil" },
+  { label: "Moj Profil", href: "#profil" },
 ]
+
+interface UserInfo {
+  nickname: string
+  avatar_url?: string
+  is_admin: boolean
+}
 
 export function Navbar() {
   const [open, setOpen] = useState(false)
+  const [user, setUser] = useState<UserInfo | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [supabase] = useState(() => createClient())
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (authUser) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("nickname, avatar_url, is_admin")
+          .eq("id", authUser.id)
+          .single()
+        if (data) {
+          setUser(data)
+        }
+      }
+      setLoading(false)
+    }
+    fetchUser()
+  }, [])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    setUser(null)
+    setOpen(false)
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-md">
@@ -41,13 +77,49 @@ export function Navbar() {
           ))}
         </nav>
 
-        {/* Desktop CTA */}
-        <a
-          href="#ekipa"
-          className="hidden md:inline-flex items-center gap-2 bg-amber text-primary-foreground font-display font-bold text-sm uppercase tracking-widest px-4 py-2 rounded hover:opacity-90 transition-opacity"
-        >
-          Graj Teraz
-        </a>
+        {/* Desktop CTA / User */}
+        <div className="hidden md:flex items-center gap-4">
+          {user ? (
+            <>
+              {user.is_admin && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-2 text-amber hover:text-amber/80 transition-colors font-sans text-sm uppercase tracking-widest"
+                >
+                  <Settings className="w-4 h-4" />
+                  Admin
+                </Link>
+              )}
+              <div className="flex items-center gap-2 px-3 py-2 rounded bg-secondary border border-border">
+                {user.avatar_url && (
+                  <Image
+                    src={user.avatar_url}
+                    alt={user.nickname}
+                    width={24}
+                    height={24}
+                    className="rounded w-6 h-6"
+                  />
+                )}
+                <span className="font-display font-bold text-sm text-foreground">
+                  {user.nickname}
+                </span>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/auth/login"
+              className="bg-amber text-primary-foreground font-display font-bold text-sm uppercase tracking-widest px-4 py-2 rounded hover:opacity-90 transition-opacity"
+            >
+              Zaloguj sie
+            </Link>
+          )}
+        </div>
 
         {/* Mobile toggle */}
         <button
@@ -72,13 +144,33 @@ export function Navbar() {
               {item.label}
             </a>
           ))}
-          <a
-            href="#ekipa"
-            onClick={() => setOpen(false)}
-            className="inline-flex items-center justify-center bg-amber text-primary-foreground font-display font-bold uppercase tracking-widest px-4 py-3 rounded mt-2"
-          >
-            Graj Teraz
-          </a>
+          {user?.is_admin && (
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 text-amber font-display font-bold uppercase tracking-widest"
+            >
+              <Settings className="w-4 h-4" />
+              Admin
+            </Link>
+          )}
+          {user ? (
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-display font-bold uppercase tracking-widest mt-2 pt-4 border-t border-border"
+            >
+              <LogOut className="w-4 h-4" />
+              Wyloguj sie
+            </button>
+          ) : (
+            <Link
+              href="/auth/login"
+              onClick={() => setOpen(false)}
+              className="inline-flex items-center justify-center bg-amber text-primary-foreground font-display font-bold uppercase tracking-widest px-4 py-3 rounded mt-2"
+            >
+              Zaloguj sie
+            </Link>
+          )}
         </nav>
       )}
     </header>

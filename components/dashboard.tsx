@@ -4,26 +4,26 @@ import { Target, Droplets, Trophy, TrendingUp, Flame, Star, Shield, Crown, Award
 
 const STATS = [
   { label: "Rzuty celne", value: "847", icon: Target, color: "text-amber", bg: "bg-amber/10" },
-  { label: "Wypite litry (izotoników)", value: "34.2 L", icon: Droplets, color: "text-neon", bg: "bg-neon/10" },
+  { label: "Wypite litry (izotonikow)", value: "34.2 L", icon: Droplets, color: "text-neon", bg: "bg-neon/10" },
   { label: "Wygrane mecze", value: "41", icon: Trophy, color: "text-amber", bg: "bg-amber/10" },
-  { label: "Seria bez porażki", value: "7", icon: Flame, color: "text-red-400", bg: "bg-red-400/10" },
+  { label: "Seria bez porazki", value: "7", icon: Flame, color: "text-red-400", bg: "bg-red-400/10" },
   { label: "Aktywne rankingi", value: "3", icon: Activity, color: "text-neon", bg: "bg-neon/10" },
   { label: "Odznaki", value: "12", icon: Award, color: "text-amber", bg: "bg-amber/10" },
 ]
 
 const HISTORY = [
-  { date: "Wczoraj", opponent: "Flanka_Bomber", result: "Wygrana", score: "15 – 9", spot: "Pola Mokotowskie" },
-  { date: "2 dni temu", opponent: "MatiasKrul", result: "Wygrana", score: "12 – 11", spot: "Bulwary Wiślane" },
-  { date: "3 dni temu", opponent: "Drużyna AGH", result: "Porażka", score: "8 – 13", spot: "Miasteczko AGH" },
-  { date: "5 dni temu", opponent: "Zbychu_Strzelec", result: "Wygrana", score: "14 – 7", spot: "Wyspa Słodowa" },
+  { date: "Wczoraj", opponent: "Flanka_Bomber", result: "Wygrana", score: "15 - 9", spot: "Pola Mokotowskie" },
+  { date: "2 dni temu", opponent: "MatiasKrul", result: "Wygrana", score: "12 - 11", spot: "Bulwary Wislane" },
+  { date: "3 dni temu", opponent: "Druzyna AGH", result: "Porazka", score: "8 - 13", spot: "Miasteczko AGH" },
+  { date: "5 dni temu", opponent: "Zbychu_Strzelec", result: "Wygrana", score: "14 - 7", spot: "Wyspa Slodowa" },
 ]
 
 const BADGES = [
-  { icon: Crown, label: "Król Flanki", description: "10 wygranych z rzędu", earned: true },
-  { icon: Target, label: "Snajper", description: "Celność powyżej 90%", earned: true },
-  { icon: Flame, label: "W Ogniu", description: "5 wygranych w tydzień", earned: true },
+  { icon: Crown, label: "Krol Flanki", description: "10 wygranych z rzedu", earned: true },
+  { icon: Target, label: "Snajper", description: "Celnosc powyzej 90%", earned: true },
+  { icon: Flame, label: "W Ogniu", description: "5 wygranych w tydzien", earned: true },
   { icon: Star, label: "Veterano", description: "100 rozegranych meczy", earned: false },
-  { icon: Shield, label: "Niezłomny", description: "Brak czerwonej kartki przez sezon", earned: true },
+  { icon: Shield, label: "Niezlomny", description: "Brak czerwonej kartki przez sezon", earned: true },
   { icon: Trophy, label: "Legenda", description: "Wygraj turniej miejski", earned: false },
 ]
 

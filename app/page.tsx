@@ -1,6 +1,9 @@
 "use client"
 
 import { useState } from "react"
+
+export const dynamic = "force-dynamic"
+
 import { AgeModal } from "@/components/age-modal"
 import { Navbar } from "@/components/navbar"
 import { Hero } from "@/components/hero"

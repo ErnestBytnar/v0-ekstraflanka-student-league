@@ -16,7 +16,7 @@ export function AgeModal({ onConfirm }: AgeModalProps) {
         <div className="text-center px-8">
           <div className="text-6xl font-display font-black mb-4 text-amber">18+</div>
           <p className="text-muted-foreground text-lg font-sans">
-            Przykro nam. Ta strona jest przeznaczona wyłącznie dla osób pełnoletnich.
+            Przykro nam. Ta strona jest przeznaczona wylacznie dla osob pelnolenich.
           </p>
         </div>
       </div>

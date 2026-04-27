@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
-import { Users, Clock, MapPin, Flame, Shield, Star, Plus, X } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Users, Clock, MapPin, Flame, Shield, Star, Plus, X, Send } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
-type Level = "Każdy" | "Średni" | "Zaawansowany" | "Pro"
+type Level = "Kazdy" | "Sredni" | "Zaawansowany" | "Pro"
 
 interface Call {
-  id: number
+  id: string
   author: string
   message: string
   spot: string
@@ -17,89 +18,98 @@ interface Call {
   postedAt: string
 }
 
-const CALLS: Call[] = [
-  {
-    id: 1,
-    author: "KaroMistrz_99",
-    message: "Brakuje dwóch do składu na 18:00, Pola Mokotowskie.",
-    spot: "Pola Mokotowskie",
-    time: "18:00",
-    level: "Pro",
-    missing: 2,
-    total: 5,
-    postedAt: "5 min temu",
-  },
-  {
-    id: 2,
-    author: "MatiasKrul",
-    message: "Trening rankingowy – szukamy 3 ekipy, Wyspa Słodowa 17:30.",
-    spot: "Wyspa Słodowa",
-    time: "17:30",
-    level: "Zaawansowany",
-    missing: 3,
-    total: 4,
-    postedAt: "12 min temu",
-  },
-  {
-    id: 3,
-    author: "Newbie_Wro",
-    message: "Nowi gracze mile widziani! Uczymy się razem. Bulwary, 16:00.",
-    spot: "Bulwary Wiślane",
-    time: "16:00",
-    level: "Każdy",
-    missing: 4,
-    total: 6,
-    postedAt: "20 min temu",
-  },
-  {
-    id: 4,
-    author: "Flanka_Bomber",
-    message: "Szybka gra po pracy. Miasteczko AGH, koło 19:00. Tylko pro.",
-    spot: "Miasteczko AGH",
-    time: "19:00",
-    level: "Pro",
-    missing: 1,
-    total: 3,
-    postedAt: "35 min temu",
-  },
-  {
-    id: 5,
-    author: "Zbychu_Strzelec",
-    message: "Weekendowy turniej eliminacyjny. Łazienki, sobota 10:00.",
-    spot: "Łazienki Królewskie",
-    time: "10:00 (sob.)",
-    level: "Zaawansowany",
-    missing: 5,
-    total: 10,
-    postedAt: "1h temu",
-  },
-]
-
 const LEVEL_STYLE: Record<Level, { bg: string; text: string; icon: typeof Flame }> = {
-  Każdy: { bg: "bg-neon/10", text: "text-neon", icon: Star },
-  Średni: { bg: "bg-amber/10", text: "text-amber", icon: Shield },
+  Kazdy: { bg: "bg-neon/10", text: "text-neon", icon: Star },
+  Sredni: { bg: "bg-amber/10", text: "text-amber", icon: Shield },
   Zaawansowany: { bg: "bg-orange-400/10", text: "text-orange-400", icon: Flame },
   Pro: { bg: "bg-red-400/10", text: "text-red-400", icon: Flame },
 }
 
 export function MatchFinder() {
-  const [calls, setCalls] = useState(CALLS)
+  const [calls, setCalls] = useState<Call[]>([])
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ message: "", spot: "", time: "", level: "Każdy" as Level, missing: 1, total: 4 })
+  const [form, setForm] = useState({ message: "", spot: "", time: "", level: "Kazdy" as Level, missing: 1, total: 4 })
+  const [user, setUser] = useState<{ id: string; nickname: string } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [supabase] = useState(() => createClient())
 
-  const handleAdd = () => {
-    if (!form.message || !form.spot) return
-    setCalls((prev) => [
-      {
-        id: Date.now(),
-        author: "Ty",
-        ...form,
-        postedAt: "Przed chwilą",
-      },
-      ...prev,
-    ])
-    setShowForm(false)
-    setForm({ message: "", spot: "", time: "", level: "Każdy", missing: 1, total: 4 })
+  useEffect(() => {
+    const init = async () => {
+      // Get current user
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (authUser) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id, nickname")
+          .eq("id", authUser.id)
+          .single()
+        if (profile) {
+          setUser({ id: authUser.id, nickname: profile.nickname })
+        }
+      }
+
+      // Fetch match calls
+      const { data: matches } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("verified", false)
+        .order("created_at", { ascending: false })
+        .limit(10)
+
+      if (matches) {
+        const formatted = matches.map((m) => ({
+          id: m.id,
+          author: "Admin Call",
+          message: `Mecz do zgloszenia: ${m.team_a?.length || 0} vs ${m.team_b?.length || 0}`,
+          spot: "Rzeszow",
+          time: new Date(m.created_at).toLocaleTimeString("pl-PL"),
+          level: "Pro" as Level,
+          missing: 0,
+          total: 0,
+          postedAt: "pending",
+        }))
+        setCalls(formatted)
+      }
+
+      setLoading(false)
+    }
+    init()
+  }, [])
+
+  const handleAdd = async () => {
+    if (!form.message || !form.spot || !user) return
+    setSubmitting(true)
+
+    const { data, error } = await supabase
+      .from("matches")
+      .insert({
+        team_a: [user.id],
+        team_b: [],
+        verified: false,
+        score_a: 0,
+        score_b: 0,
+      })
+      .select()
+      .single()
+
+    if (!error && data) {
+      const newCall: Call = {
+        id: data.id,
+        author: user.nickname,
+        message: form.message,
+        spot: form.spot,
+        time: form.time,
+        level: form.level,
+        missing: form.missing,
+        total: form.total,
+        postedAt: "Przed chwila",
+      }
+      setCalls((prev) => [newCall, ...prev])
+      setShowForm(false)
+      setForm({ message: "", spot: "", time: "", level: "Kazdy", missing: 1, total: 4 })
+    }
+    setSubmitting(false)
   }
 
   return (
@@ -119,10 +129,11 @@ export function MatchFinder() {
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 bg-amber text-primary-foreground font-display font-bold text-sm uppercase tracking-widest px-5 py-3 rounded hover:opacity-90 transition-opacity flex-shrink-0 glow-amber"
+            disabled={!user}
+            className="flex items-center gap-2 bg-amber text-primary-foreground font-display font-bold text-sm uppercase tracking-widest px-5 py-3 rounded hover:opacity-90 transition-opacity flex-shrink-0 glow-amber disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
-            Dodaj Ogłoszenie
+            {user ? "Dodaj Ogloszenie" : "Zaloguj sie Aby Dodac"}
           </button>
         </div>
 
@@ -140,11 +151,11 @@ export function MatchFinder() {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="font-sans text-xs text-muted-foreground uppercase tracking-widest block mb-1">
-                  Wiadomość
+                  Wiadomosc
                 </label>
                 <input
                   className="w-full bg-background border border-border rounded px-3 py-2 font-sans text-sm text-foreground focus:outline-none focus:border-amber transition-colors"
-                  placeholder="np. Brakuje dwóch do składu na 18:00..."
+                  placeholder="np. Brakuje dwoch do skladu na 18:00..."
                   value={form.message}
                   onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
                 />
@@ -180,7 +191,7 @@ export function MatchFinder() {
                   value={form.level}
                   onChange={(e) => setForm((f) => ({ ...f, level: e.target.value as Level }))}
                 >
-                  {(["Każdy", "Średni", "Zaawansowany", "Pro"] as Level[]).map((l) => (
+                  {(["Kazdy", "Sredni", "Zaawansowany", "Pro"] as Level[]).map((l) => (
                     <option key={l}>{l}</option>
                   ))}
                 </select>
@@ -201,9 +212,13 @@ export function MatchFinder() {
             </div>
             <button
               onClick={handleAdd}
-              className="mt-4 bg-amber text-primary-foreground font-display font-bold text-sm uppercase tracking-widest px-6 py-2.5 rounded hover:opacity-90 transition-opacity"
+              disabled={submitting || !form.message || !form.spot}
+              className="mt-4 bg-amber text-primary-foreground font-display font-bold text-sm uppercase tracking-widest px-6 py-2.5 rounded hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              Opublikuj
+              {submitting ? "Wysylanie..." : <>
+                <Send className="w-4 h-4" />
+                Opublikuj
+              </>}
             </button>
           </div>
         )}
