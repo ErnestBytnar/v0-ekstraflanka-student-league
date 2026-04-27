@@ -32,10 +32,10 @@ export function MatchFinder() {
   const [user, setUser] = useState<{ id: string; nickname: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [supabase] = useState(() => createClient())
 
   useEffect(() => {
     const init = async () => {
+      const supabase = createClient()
       // Get current user
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (authUser) {
@@ -80,6 +80,7 @@ export function MatchFinder() {
   const handleAdd = async () => {
     if (!form.message || !form.spot || !user) return
     setSubmitting(true)
+    const supabase = createClient()
 
     const { data, error } = await supabase
       .from("matches")

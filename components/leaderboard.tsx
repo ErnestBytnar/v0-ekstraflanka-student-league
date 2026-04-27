@@ -27,11 +27,11 @@ export function Leaderboard() {
   const [active, setActive] = useState("snajperzy")
   const [data, setData] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
-  const [supabase] = useState(() => createClient())
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
       setLoading(true)
+      const supabase = createClient()
       const { data: profiles, error } = await supabase
         .from("profiles")
         .select("*")

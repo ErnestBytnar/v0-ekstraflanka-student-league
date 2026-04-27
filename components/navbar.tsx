@@ -24,10 +24,10 @@ export function Navbar() {
   const [open, setOpen] = useState(false)
   const [user, setUser] = useState<UserInfo | null>(null)
   const [loading, setLoading] = useState(true)
-  const [supabase] = useState(() => createClient())
 
   useEffect(() => {
     const fetchUser = async () => {
+      const supabase = createClient()
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (authUser) {
         const { data } = await supabase
@@ -45,6 +45,7 @@ export function Navbar() {
   }, [])
 
   const handleLogout = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
     setUser(null)
     setOpen(false)

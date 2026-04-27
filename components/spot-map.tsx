@@ -21,10 +21,10 @@ export function SpotMap() {
   const [selected, setSelected] = useState<Spot | null>(null)
   const [user, setUser] = useState<{ id: string; nickname: string } | null>(null)
   const [checkedIn, setCheckedIn] = useState<string[]>([])
-  const [supabase] = useState(() => createClient())
 
   useEffect(() => {
     const init = async () => {
+      const supabase = createClient()
       // Get current user
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (authUser) {
