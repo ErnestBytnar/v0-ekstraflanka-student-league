@@ -1,9 +1,9 @@
 export type Rank = "Swiezak" | "Snajper spod Grzyba" | "Magister Celnosci" | "Legenda Narodowego"
 
-export function getRank(wins: number): Rank {
-  if (wins >= 25) return "Legenda Narodowego"
-  if (wins >= 11) return "Magister Celnosci"
-  if (wins >= 3) return "Snajper spod Grzyba"
+export function getRank(points: number): Rank {
+  if (points >= 100) return "Legenda Narodowego"
+  if (points >= 50) return "Magister Celnosci"
+  if (points >= 10) return "Snajper spod Grzyba"
   return "Swiezak"
 }
 

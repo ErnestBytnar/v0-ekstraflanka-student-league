@@ -9,9 +9,9 @@ import Image from "next/image"
 const NAV_ITEMS = [
   { label: "Ranking", href: "#ranking" },
   { label: "Kodeks", href: "#kodeks" },
+  { label: "Eventy", href: "#events" },
   { label: "Mapa Spotow", href: "#mapa" },
   { label: "Szukam Ekipy", href: "#ekipa" },
-  { label: "Moj Profil", href: "#profil" },
 ]
 
 interface UserInfo {
@@ -91,7 +91,10 @@ export function Navbar() {
                   Admin
                 </Link>
               )}
-              <div className="flex items-center gap-2 px-3 py-2 rounded bg-secondary border border-border">
+              <Link
+                href="/profil"
+                className="flex items-center gap-2 px-3 py-2 rounded bg-secondary border border-border hover:border-amber transition-colors"
+              >
                 {user.avatar_url && (
                   <Image
                     src={user.avatar_url}
@@ -104,7 +107,7 @@ export function Navbar() {
                 <span className="font-display font-bold text-sm text-foreground">
                   {user.nickname}
                 </span>
-              </div>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="p-2 text-muted-foreground hover:text-foreground transition-colors"

@@ -12,6 +12,7 @@ import { Kodeks } from "@/components/kodeks"
 import { SpotMap } from "@/components/spot-map"
 import { MatchFinder } from "@/components/match-finder"
 import { Dashboard } from "@/components/dashboard"
+import { Events } from "@/components/events"
 import { Zap, Instagram, Twitter, Youtube } from "lucide-react"
 
 export default function Page() {
@@ -33,6 +34,7 @@ export default function Page() {
 
           <Leaderboard />
           <Kodeks />
+          <Events />
           <SpotMap />
           <MatchFinder />
           <Dashboard />

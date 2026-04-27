@@ -2,32 +2,32 @@
 
 import { useEffect, useState, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Check, X, ArrowLeft } from "lucide-react"
+import { Check, X, ArrowLeft, Plus, Minus, Save, LogOut } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 
-interface Match {
+interface PlayerPoints {
   id: string
-  team_a: string[]
-  team_b: string[]
-  score_a: number
-  score_b: number
-  verified: boolean
-  created_at: string
+  nickname: string
+  faculty: string
+  points: number
+  is_admin: boolean
 }
 
 export default function AdminPage() {
-  const [matches, setMatches] = useState<Match[]>([])
+  const [players, setPlayers] = useState<PlayerPoints[]>([])
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [approving, setApproving] = useState<string | null>(null)
+  const [pointsChanges, setPointsChanges] = useState<Record<string, number>>({})
+  const [saving, setSaving] = useState(false)
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const router = useRouter()
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    const checkAdminAndLoadPlayers = async () => {
       if (!supabaseRef.current) {
         supabaseRef.current = createClient()
       }
@@ -52,171 +52,221 @@ export default function AdminPage() {
 
       setIsAdmin(true)
 
-      // Fetch pending matches
-      const { data: pendingMatches } = await supabase
-        .from("matches")
-        .select("*")
-        .eq("verified", false)
-        .order("created_at", { ascending: false })
+      // Load all players
+      const { data: allPlayers } = await supabase
+        .from("profiles")
+        .select("id, nickname, faculty, points, is_admin")
+        .order("points", { ascending: false })
 
-      if (pendingMatches) {
-        setMatches(pendingMatches as Match[])
+      if (allPlayers) {
+        setPlayers(allPlayers)
       }
       setLoading(false)
     }
 
-    checkAdmin()
-  }, [])
+    checkAdminAndLoadPlayers()
+  }, [router])
 
-  const handleApprove = async (matchId: string, match: Match) => {
-    setApproving(matchId)
-    const supabase = supabaseRef.current || createClient()
-
-    // Increment wins for team_a
-    if (match.team_a.length > 0) {
-      for (const userId of match.team_a) {
-        await supabase
-          .from("profiles")
-          .update({ wins: 1 })
-          .eq("id", userId)
-          .then(({ data }) => {
-            if (data) {
-              const currentWins = (data as any)[0]?.wins || 0
-              supabase
-                .from("profiles")
-                .update({ wins: currentWins + 1 })
-                .eq("id", userId)
-            }
-          })
-      }
-    }
-
-    // Increment losses for team_b
-    if (match.team_b.length > 0) {
-      for (const userId of match.team_b) {
-        await supabase
-          .from("profiles")
-          .update({ losses: 1 })
-          .eq("id", userId)
-          .then(({ data }) => {
-            if (data) {
-              const currentLosses = (data as any)[0]?.losses || 0
-              supabase
-                .from("profiles")
-                .update({ losses: currentLosses + 1 })
-                .eq("id", userId)
-            }
-          })
-      }
-    }
-
-    // Mark match as verified
-    await supabase
-      .from("matches")
-      .update({ verified: true })
-      .eq("id", matchId)
-
-    setMatches((prev) => prev.filter((m) => m.id !== matchId))
-    setApproving(null)
+  const updatePoints = (playerId: string, delta: number) => {
+    setPointsChanges((prev) => ({
+      ...prev,
+      [playerId]: (prev[playerId] || 0) + delta,
+    }))
   }
 
-  const handleReject = async (matchId: string) => {
-    setApproving(matchId)
-    const supabase = supabaseRef.current || createClient()
-    await supabase
-      .from("matches")
-      .delete()
-      .eq("id", matchId)
+  const saveChanges = async () => {
+    setSaving(true)
+    try {
+      const supabase = supabaseRef.current || createClient()
 
-    setMatches((prev) => prev.filter((m) => m.id !== matchId))
-    setApproving(null)
+      for (const [playerId, delta] of Object.entries(pointsChanges)) {
+        const player = players.find((p) => p.id === playerId)
+        if (!player) continue
+
+        const newPoints = Math.max(0, player.points + delta)
+        await supabase
+          .from("profiles")
+          .update({ points: newPoints })
+          .eq("id", playerId)
+      }
+
+      // Reload players
+      const { data: updated } = await supabase
+        .from("profiles")
+        .select("id, nickname, faculty, points, is_admin")
+        .order("points", { ascending: false })
+
+      if (updated) {
+        setPlayers(updated)
+      }
+
+      setPointsChanges({})
+      setToast({ message: "Punkty zaktualizowane!", type: "success" })
+      setTimeout(() => setToast(null), 3000)
+    } catch (error) {
+      setToast({
+        message: error instanceof Error ? error.message : "Blad przy zapisywaniu",
+        type: "error",
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    const supabase = supabaseRef.current || createClient()
+    await supabase.auth.signOut()
+    router.push("/auth/login")
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="font-sans text-muted-foreground">Ladowanie...</p>
+      </div>
+    )
   }
 
   if (!isAdmin) {
     return null
   }
 
+  const hasChanges = Object.keys(pointsChanges).length > 0
+
   return (
-    <main className="min-h-screen bg-background pt-24 pb-20 px-4">
-      <div className="max-w-4xl mx-auto">
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-amber hover:text-amber/80 transition-colors mb-8 font-sans text-sm uppercase tracking-widest"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Wroc do strony
-        </Link>
-
-        <div className="mb-12">
-          <h1 className="font-display font-black text-5xl md:text-6xl uppercase text-foreground mb-4">
-            Panel <span className="text-amber">Admina</span>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b border-border bg-card">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="font-sans text-sm uppercase tracking-widest">Wrol</span>
+          </Link>
+          <h1 className="font-display font-black text-xl uppercase tracking-widest text-foreground">
+            Admin Panel
           </h1>
-          <p className="font-sans text-muted-foreground text-lg">
-            Zarzadzaj czekajacymi meczami i zatwierdz wyniki
-          </p>
+          <button onClick={handleLogout} className="text-muted-foreground hover:text-red-400 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
         </div>
-
-        {loading ? (
-          <div className="text-center text-muted-foreground py-12">Ladowanie meczow...</div>
-        ) : matches.length === 0 ? (
-          <div className="border border-border rounded-lg p-12 text-center bg-card">
-            <p className="font-sans text-muted-foreground mb-4">Brak czekajacych meczow</p>
-            <p className="font-sans text-sm text-muted-foreground">
-              Wszystkie meczy zostaly zatwierdzone!
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-6">
-            {matches.map((match) => (
-              <div
-                key={match.id}
-                className="border border-border bg-card rounded-lg p-6 hover:border-amber/30 transition-colors"
-              >
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                  <div>
-                    <h3 className="font-display font-bold text-lg text-foreground mb-2">
-                      Druzyna A vs Druzyna B
-                    </h3>
-                    <p className="font-sans text-sm text-muted-foreground">
-                      ID: {match.id.substring(0, 8)}...
-                    </p>
-                    <p className="font-sans text-xs text-muted-foreground mt-2">
-                      {new Date(match.created_at).toLocaleString("pl-PL")}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-display font-black text-3xl text-foreground">
-                      {match.score_a} - {match.score_b}
-                    </div>
-                    <div className="font-sans text-xs text-muted-foreground mt-1">
-                      {match.team_a.length} vs {match.team_b.length} graczy
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row gap-3">
-                  <button
-                    onClick={() => handleApprove(match.id, match)}
-                    disabled={approving === match.id}
-                    className="flex-1 flex items-center justify-center gap-2 bg-neon/20 text-neon border border-neon/40 font-display font-bold text-sm uppercase tracking-widest px-4 py-3 rounded hover:bg-neon/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Check className="w-4 h-4" />
-                    {approving === match.id ? "Zatwierdzanie..." : "Zatwierdz"}
-                  </button>
-                  <button
-                    onClick={() => handleReject(match.id)}
-                    disabled={approving === match.id}
-                    className="flex-1 flex items-center justify-center gap-2 bg-red-400/20 text-red-400 border border-red-400/40 font-display font-bold text-sm uppercase tracking-widest px-4 py-3 rounded hover:bg-red-400/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <X className="w-4 h-4" />
-                    {approving === match.id ? "Usuwanie..." : "Odrzuc"}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
-    </main>
+
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`fixed top-4 right-4 px-4 py-3 rounded font-sans text-sm font-semibold flex items-center gap-2 ${
+            toast.type === "success"
+              ? "bg-green-500/20 text-green-400 border border-green-500/30"
+              : "bg-red-500/20 text-red-400 border border-red-500/30"
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Zarzadzanie Punktami */}
+        <div className="bg-card border border-border rounded-lg p-6">
+          <h2 className="font-display font-black text-xl uppercase tracking-widest text-foreground mb-6">
+            Zarzadzanie Punktami
+          </h2>
+
+          {/* Players Table */}
+          <div className="overflow-x-auto mb-6">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-3 font-display font-bold text-xs uppercase tracking-widest text-muted-foreground">
+                    Gracz
+                  </th>
+                  <th className="text-left py-3 px-3 font-display font-bold text-xs uppercase tracking-widest text-muted-foreground">
+                    Wydzial
+                  </th>
+                  <th className="text-center py-3 px-3 font-display font-bold text-xs uppercase tracking-widest text-muted-foreground">
+                    Aktualne Punkty
+                  </th>
+                  <th className="text-center py-3 px-3 font-display font-bold text-xs uppercase tracking-widest text-muted-foreground">
+                    Zmiana
+                  </th>
+                  <th className="text-center py-3 px-3 font-display font-bold text-xs uppercase tracking-widest text-muted-foreground">
+                    Nowe Punkty
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {players.map((player) => (
+                  <tr key={player.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                    <td className="py-4 px-3">
+                      <div>
+                        <p className="font-display font-bold text-foreground">{player.nickname}</p>
+                        {player.is_admin && (
+                          <p className="font-sans text-xs text-amber">Admin</p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-4 px-3 font-sans text-muted-foreground">{player.faculty}</td>
+                    <td className="py-4 px-3 text-center font-display font-bold text-amber">
+                      {player.points}
+                    </td>
+                    <td className="py-4 px-3">
+                      <div className="flex justify-center gap-2">
+                        <button
+                          onClick={() => updatePoints(player.id, -1)}
+                          className="p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded transition-colors"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="w-8 text-center font-display font-bold text-foreground">
+                          {pointsChanges[player.id] || 0}
+                        </span>
+                        <button
+                          onClick={() => updatePoints(player.id, 1)}
+                          className="p-1.5 bg-green-500/20 text-green-400 hover:bg-green-500/30 rounded transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="py-4 px-3 text-center font-display font-bold text-foreground">
+                      {Math.max(0, player.points + (pointsChanges[player.id] || 0))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Save Button */}
+          {hasChanges && (
+            <div className="flex gap-3">
+              <button
+                onClick={saveChanges}
+                disabled={saving}
+                className="flex items-center gap-2 bg-amber text-primary-foreground font-display font-bold text-sm uppercase tracking-widest px-6 py-3 rounded hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                <Check className="w-4 h-4" />
+                {saving ? "Zapisywanie..." : "Zapisz Zmiany"}
+              </button>
+              <button
+                onClick={() => setPointsChanges({})}
+                className="bg-secondary border border-border text-muted-foreground font-display font-bold text-sm uppercase tracking-widest px-6 py-3 rounded hover:border-amber transition-colors"
+              >
+                Anuluj
+              </button>
+            </div>
+          )}
+
+          {!hasChanges && (
+            <p className="text-center text-muted-foreground font-sans text-sm">
+              Brak zmian do zapisania
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
