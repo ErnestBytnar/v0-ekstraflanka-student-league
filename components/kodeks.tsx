@@ -12,13 +12,13 @@ const CATEGORIES = [
     borderColor: "border-amber/40",
     bgColor: "bg-amber/5",
     rules: [
-      "Mecz składa się z dwóch drużyn po 3–5 zawodników. Liczba musi być równa po obu stronach.",
-      "Flankę rzuca się z pozycji stojącej, bez przekraczania linii rzutu.",
-      "Każdy zawodnik ma 3 próby na turę. Rzuty niecelne odliczane są od puli celnych.",
-      "Punkty przyznawane są za precyzję: trafienie w środek = 3 pkt, obrzeże = 1 pkt.",
-      "Cel zostaje potwierdzony przez co najmniej dwóch świadków lub nagranie wideo.",
-      "Zakaz używania pomocy mechanicznych, kształtujących tor lotu.",
-      "Remis rozstrzyga się dogrywką – każda drużyna gra po jednym rzucie naprzemiennie.",
+      "Mecz sklada sie z dwoch druzyn po 3-5 zawodnikow. Liczba musi byc rowna po obu stronach.",
+      "Flanke rzuca sie z pozycji stojacej, bez przekraczania linii rzutu.",
+      "Kazdy zawodnik ma 3 proby na ture. Rzuty niecelne odliczane sa od puli celnych.",
+      "Punkty przyznawane sa za precyzje: trafienie w srodek = 3 pkt, obrzeze = 1 pkt.",
+      "Cel zostaje potwierdzony przez co najmniej dwoch swiadkow lub nagranie wideo.",
+      "Zakaz uzywania pomocy mechanicznych, ksztaltujacych tor lotu.",
+      "Remis rozstrzyga sie dogrywka - kazda druzyna gra po jednym rzucie naprzemiennie.",
     ],
   },
   {
@@ -29,12 +29,12 @@ const CATEGORIES = [
     borderColor: "border-neon/40",
     bgColor: "bg-neon/5",
     rules: [
-      "Warszawa: Obowiązuje tzw. „Zasada Bielan" – rzuty zza 15 m są premiowane x1.5.",
-      "Kraków: Tryb „Kopiec Kościuszki" – gra pod górę zwiększa wycenę rzutów o +2 pkt.",
-      "Trójmiasto: „Morska Flanka" – w dni wietrzne (>30 km/h) aktywny jest Tryb Turbo.",
-      "Wrocław: Wyspa Słodowa umożliwia grę „na mostku" – specjalne zasady odbić.",
-      "Poznań: „Targi Dominikańskie" – rozszerzone pole gry, dostępny tryb 6v6.",
-      "Łódź: Włókniarz Mode – każde trafienie w bok kortu liczy jak trafienie w środek.",
+      'Warszawa: Obowiazuje tzw. "Zasada Bielan" - rzuty zza 15 m sa premiowane x1.5.',
+      'Krakow: Tryb "Kopiec Kosciuszki" - gra pod gore zwieksza wycene rzutow o +2 pkt.',
+      'Trojmiasto: "Morska Flanka" - w dni wietrzne (>30 km/h) aktywny jest Tryb Turbo.',
+      'Wroclaw: Wyspa Slodowa umozliwia gre "na mostku" - specjalne zasady odbic.',
+      'Poznan: "Targi Dominikanskie" - rozszerzone pole gry, dostepny tryb 6v6.',
+      "Lodz: Wlokniarz Mode - kazde trafienie w bok kortu liczy jak trafienie w srodek.",
     ],
   },
   {
@@ -45,13 +45,13 @@ const CATEGORIES = [
     borderColor: "border-red-400/40",
     bgColor: "bg-red-400/5",
     rules: [
-      "Przekroczenie linii rzutu: utrata tury przez cały skład (-5 pkt drużyny).",
-      "Kontrowersja co do celu: rundę weryfikacyjną rozgrywa się ponownie.",
-      "Użycie zakazanego sprzętu: dyskwalifikacja z aktualnej rundy, żółta kartka.",
-      "Dwie żółte kartki = czerwona. Zawodnik opuszcza boisko na 10 minut.",
+      "Przekroczenie linii rzutu: utrata tury przez caly sklad (-5 pkt druzyny).",
+      "Kontrowersja co do celu: runde weryfikacyjna rozgrywa sie ponownie.",
+      "Uzycie zakazanego sprzetu: dyskwalifikacja z aktualnej rundy, zolta kartka.",
+      "Dwie zolte kartki = czerwona. Zawodnik opuszcza boisko na 10 minut.",
       "Trzy czerwone kartki w sezonie = zawieszenie na jeden turniej.",
-      "Celowe zakłócanie koncentracji (krzyki, gesty) = ostrzeżenie i -2 pkt drużyny.",
-      "Gra pod wpływem alkoholu: natychmiastowa dyskwalifikacja i zgłoszenie do ligi.",
+      "Celowe zaklocanie koncentracji (krzyki, gesty) = ostrzezenie i -2 pkt druzyny.",
+      "Gra pod wplywem alkoholu: natychmiastowa dyskwalifikacja i zgloszenie do ligi.",
     ],
   },
 ]
@@ -73,8 +73,8 @@ export function Kodeks() {
             <span className="text-amber text-glow-amber">(Bez Oszukiwania)</span>
           </h2>
           <p className="text-muted-foreground font-sans text-base mt-4 max-w-xl mx-auto leading-relaxed">
-            Każda ligowa flanka rozgrywana jest zgodnie z oficjalnym Kodeksem EkstraFlanki.
-            Nieznajomość zasad nie zwalnia z odpowiedzialności.
+            Kazda ligowa flanka rozgrywana jest zgodnie z oficjalnym Kodeksem EkstraFlanki.
+            Nieznajomosci zasad nie zwalnia z odpowiedzialnosci.
           </p>
         </div>
 
