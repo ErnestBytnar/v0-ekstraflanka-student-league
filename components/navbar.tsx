@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Menu, X, Zap, LogOut, Settings } from "lucide-react"
+import { Menu, X, Zap, LogOut, Settings, Crown } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import Image from "next/image"
@@ -85,9 +85,9 @@ export function Navbar() {
               {user.is_admin && (
                 <Link
                   href="/admin"
-                  className="flex items-center gap-2 text-amber hover:text-amber/80 transition-colors font-sans text-sm uppercase tracking-widest"
+                  className="flex items-center gap-2 bg-amber/10 border border-amber/40 text-amber hover:bg-amber/20 transition-colors font-display font-bold text-xs uppercase tracking-widest px-3 py-1.5 rounded-full"
                 >
-                  <Settings className="w-4 h-4" />
+                  <Crown className="w-3.5 h-3.5" />
                   Admin
                 </Link>
               )}

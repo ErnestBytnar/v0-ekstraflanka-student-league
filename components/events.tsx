@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Calendar, MapPin, Users, Plus, X } from 'lucide-react'
+import { Calendar, MapPin, Users, Plus, Clock } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface Event {
   id: string
@@ -11,19 +12,46 @@ interface Event {
   event_date: string
   description: string
   created_by: string
+  is_approved: boolean
   attendee_count: number
-  attendees: { nickname: string }[]
+}
+
+function Skeleton({ className }: { className?: string }) {
+  return <div className={`animate-pulse bg-muted rounded ${className || ''}`} />
 }
 
 export function Events() {
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<{ id: string; nickname: string } | null>(null)
+  const [user, setUser] = useState<{ id: string; nickname: string; is_admin: boolean } | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({ title: '', location: '', event_date: '', description: '' })
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
   const [joined, setJoined] = useState<Set<string>>(new Set())
+
+  const fetchEvents = async (isAdmin: boolean) => {
+    const supabase = createClient()
+    
+    // Fetch events - show all if admin, only approved otherwise
+    let query = supabase
+      .from('events')
+      .select('*, event_attendees(user_id)')
+      .order('event_date', { ascending: true })
+
+    if (!isAdmin) {
+      query = query.eq('is_approved', true)
+    }
+
+    const { data: eventsData } = await query
+
+    if (eventsData) {
+      const formattedEvents = eventsData.map((e) => ({
+        ...e,
+        attendee_count: (e as any).event_attendees?.length || 0,
+      }))
+      setEvents(formattedEvents)
+    }
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -31,31 +59,21 @@ export function Events() {
       
       // Get current user
       const { data: { user: authUser } } = await supabase.auth.getUser()
+      let isAdmin = false
+      
       if (authUser) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('id, nickname')
+          .select('id, nickname, is_admin')
           .eq('id', authUser.id)
           .single()
         if (profile) {
           setUser(profile)
+          isAdmin = profile.is_admin
         }
       }
 
-      // Fetch events with attendees
-      const { data: eventsData } = await supabase
-        .from('events')
-        .select('*, event_attendees(user_id)')
-        .order('event_date', { ascending: true })
-
-      if (eventsData) {
-        const formattedEvents = eventsData.map((e) => ({
-          ...e,
-          attendee_count: (e as any).event_attendees?.length || 0,
-          attendees: [],
-        }))
-        setEvents(formattedEvents)
-      }
+      await fetchEvents(isAdmin)
 
       // Check which events user joined
       if (authUser) {
@@ -78,12 +96,11 @@ export function Events() {
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) {
-      setError('Musisz byc zalogowany')
+      toast.error('Musisz byc zalogowany')
       return
     }
 
     setSubmitting(true)
-    setError('')
 
     try {
       const supabase = createClient()
@@ -95,17 +112,24 @@ export function Events() {
           event_date: new Date(formData.event_date).toISOString(),
           description: formData.description,
           created_by: user.id,
+          is_approved: user.is_admin, // Auto-approve if admin
         })
         .select()
         .single()
 
       if (createError) throw createError
 
-      setEvents([...events, { ...data, attendee_count: 0, attendees: [] }])
+      await fetchEvents(user.is_admin)
       setFormData({ title: '', location: '', event_date: '', description: '' })
       setShowForm(false)
+      
+      if (user.is_admin) {
+        toast.success('Event utworzony i zatwierdzony!')
+      } else {
+        toast.success('Event wyslany do moderacji!')
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Blad tworzenia eventu')
+      toast.error(err instanceof Error ? err.message : 'Blad tworzenia eventu')
     } finally {
       setSubmitting(false)
     }
@@ -130,6 +154,7 @@ export function Events() {
           newSet.delete(eventId)
           return newSet
         })
+        toast.success('Wypisales sie z eventu')
       } else {
         // Join event
         await supabase
@@ -137,25 +162,29 @@ export function Events() {
           .insert({ event_id: eventId, user_id: user.id })
 
         setJoined((prev) => new Set([...prev, eventId]))
+        toast.success('Dołaczyles do eventu!')
       }
 
       // Refresh events
-      const { data: eventsData } = await supabase
-        .from('events')
-        .select('*, event_attendees(user_id)')
-        .order('event_date', { ascending: true })
-
-      if (eventsData) {
-        const formattedEvents = eventsData.map((e) => ({
-          ...e,
-          attendee_count: (e as any).event_attendees?.length || 0,
-          attendees: [],
-        }))
-        setEvents(formattedEvents)
-      }
+      await fetchEvents(user.is_admin)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Blad przy dołaczeniu')
+      toast.error(err instanceof Error ? err.message : 'Blad przy dołaczeniu')
     }
+  }
+
+  const formatEventDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleString('pl-PL', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  const isUpcoming = (dateString: string) => {
+    return new Date(dateString) > new Date()
   }
 
   return (
@@ -193,7 +222,7 @@ export function Events() {
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="np. Turniej flanek - Runde 1"
+                  placeholder="np. Turniej flanek - Runda 1"
                   className="w-full px-3 py-2.5 bg-secondary border border-border rounded font-sans text-sm focus:outline-none focus:border-amber transition-colors"
                 />
               </div>
@@ -240,10 +269,10 @@ export function Events() {
                 />
               </div>
 
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-3 py-2 rounded font-sans">
-                  {error}
-                </div>
+              {!user.is_admin && (
+                <p className="text-xs text-muted-foreground">
+                  Event zostanie wyslany do moderacji przed publikacja.
+                </p>
               )}
 
               <div className="flex gap-3">
@@ -268,9 +297,13 @@ export function Events() {
 
         {/* Events List */}
         {loading ? (
-          <div className="text-center text-muted-foreground">Ladowanie eventow...</div>
+          <div className="grid md:grid-cols-2 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-64 rounded-lg" />
+            ))}
+          </div>
         ) : events.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
+          <div className="text-center py-12 text-muted-foreground border border-border rounded-lg bg-card">
             Brak eventow. Badz pierwszy i stworz jeden!
           </div>
         ) : (
@@ -278,15 +311,29 @@ export function Events() {
             {events.map((event) => (
               <div
                 key={event.id}
-                className="bg-card border border-border rounded-lg p-6 hover:border-amber/40 transition-colors"
+                className={`bg-card border rounded-lg p-6 hover:border-amber/40 transition-colors ${
+                  !event.is_approved ? 'border-orange-400/40' : 'border-border'
+                }`}
               >
                 <div className="flex items-start justify-between mb-4">
                   <h3 className="font-display font-bold text-lg text-foreground flex-1">{event.title}</h3>
-                  {user?.id === event.created_by && (
-                    <span className="text-amber font-sans text-xs font-semibold bg-amber/10 px-2 py-1 rounded">
-                      Twoj event
-                    </span>
-                  )}
+                  <div className="flex gap-2">
+                    {!event.is_approved && (
+                      <span className="text-orange-400 font-sans text-xs font-semibold bg-orange-400/10 px-2 py-1 rounded">
+                        Oczekuje
+                      </span>
+                    )}
+                    {user?.id === event.created_by && (
+                      <span className="text-amber font-sans text-xs font-semibold bg-amber/10 px-2 py-1 rounded">
+                        Twoj event
+                      </span>
+                    )}
+                    {!isUpcoming(event.event_date) && (
+                      <span className="text-muted-foreground font-sans text-xs font-semibold bg-muted px-2 py-1 rounded">
+                        Zakonczony
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2 mb-4 text-sm">
@@ -296,14 +343,7 @@ export function Events() {
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="w-4 h-4 text-amber" />
-                    <span>
-                      {new Date(event.event_date).toLocaleString('pl-PL', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
+                    <span>{formatEventDate(event.event_date)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Users className="w-4 h-4 text-amber" />
@@ -315,17 +355,19 @@ export function Events() {
                   {event.description}
                 </p>
 
-                <button
-                  onClick={() => handleJoinEvent(event.id)}
-                  disabled={!user}
-                  className={`w-full font-display font-bold text-sm uppercase tracking-widest px-4 py-2.5 rounded transition-colors ${
-                    joined.has(event.id)
-                      ? 'bg-amber/20 text-amber border border-amber/40 hover:bg-amber/30'
-                      : 'bg-amber text-primary-foreground hover:opacity-90'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {user ? (joined.has(event.id) ? 'Juz sie zapisales' : 'Zapisz sie') : 'Zaloguj sie'}
-                </button>
+                {event.is_approved && isUpcoming(event.event_date) && (
+                  <button
+                    onClick={() => handleJoinEvent(event.id)}
+                    disabled={!user}
+                    className={`w-full font-display font-bold text-sm uppercase tracking-widest px-4 py-2.5 rounded transition-colors ${
+                      joined.has(event.id)
+                        ? 'bg-amber/20 text-amber border border-amber/40 hover:bg-amber/30'
+                        : 'bg-amber text-primary-foreground hover:opacity-90'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {user ? (joined.has(event.id) ? 'Juz sie zapisales' : 'Zapisz sie') : 'Zaloguj sie'}
+                  </button>
+                )}
               </div>
             ))}
           </div>

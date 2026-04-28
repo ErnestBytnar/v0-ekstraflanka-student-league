@@ -3,7 +3,8 @@
 import { createClient } from '@/lib/supabase/client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mail, Lock, User, BookOpen } from 'lucide-react'
+import { Mail, Lock, User, BookOpen, GraduationCap } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function AuthPage() {
   const router = useRouter()
@@ -20,6 +21,7 @@ export default function AuthPage() {
   const [regPassword, setRegPassword] = useState('')
   const [regNickname, setRegNickname] = useState('')
   const [regFaculty, setRegFaculty] = useState('')
+  const [regUniversity, setRegUniversity] = useState('')
   const [regError, setRegError] = useState('')
   const [regLoading, setRegLoading] = useState(false)
 
@@ -27,10 +29,23 @@ export default function AuthPage() {
     'Informatyka',
     'Elektrotechnika',
     'Budownictwo',
-    'Zarządzanie',
+    'Zarzadzanie',
     'Ekonomia',
     'Prawo',
     'Medycyna',
+    'Inne',
+  ]
+
+  const universities = [
+    'Politechnika Rzeszowska',
+    'Uniwersytet Rzeszowski',
+    'WSIiZ Rzeszow',
+    'AGH Krakow',
+    'Politechnika Krakowska',
+    'UJ Krakow',
+    'Politechnika Warszawska',
+    'UW Warszawa',
+    'Politechnika Wroclawska',
     'Inne',
   ]
 
@@ -47,7 +62,9 @@ export default function AuthPage() {
       })
       
       if (error) throw error
-      router.push('/profil')
+      toast.success('Siema! Zalogowano pomyslnie')
+      router.push('/')
+      router.refresh()
     } catch (error: unknown) {
       setLoginError(error instanceof Error ? error.message : 'Blad logowania')
     } finally {
@@ -84,6 +101,7 @@ export default function AuthPage() {
             id: data.user.id,
             nickname: regNickname,
             faculty: regFaculty,
+            university: regUniversity,
             points: 0,
             is_admin: false,
           })
@@ -97,7 +115,9 @@ export default function AuthPage() {
         })
         
         if (signInError) throw signInError
-        router.push('/profil')
+        toast.success('Witamy w grze! Konto utworzone')
+        router.push('/')
+        router.refresh()
       }
     } catch (error: unknown) {
       setRegError(error instanceof Error ? error.message : 'Blad rejestracji')
@@ -174,7 +194,7 @@ export default function AuthPage() {
                   required
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="********"
                   className="w-full pl-10 pr-3 py-2.5 bg-secondary border border-border rounded font-sans text-sm focus:outline-none focus:border-amber transition-colors"
                 />
               </div>
@@ -218,7 +238,7 @@ export default function AuthPage() {
 
             <div>
               <label className="block font-sans text-xs text-muted-foreground uppercase tracking-widest mb-2">
-                Nickauname
+                Nickname
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
@@ -230,6 +250,28 @@ export default function AuthPage() {
                   placeholder="Twoj_nick"
                   className="w-full pl-10 pr-3 py-2.5 bg-secondary border border-border rounded font-sans text-sm focus:outline-none focus:border-amber transition-colors"
                 />
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-sans text-xs text-muted-foreground uppercase tracking-widest mb-2">
+                Uczelnia
+              </label>
+              <div className="relative">
+                <GraduationCap className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                <select
+                  required
+                  value={regUniversity}
+                  onChange={(e) => setRegUniversity(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2.5 bg-secondary border border-border rounded font-sans text-sm focus:outline-none focus:border-amber transition-colors appearance-none"
+                >
+                  <option value="">Wybierz uczelnie</option>
+                  {universities.map((u) => (
+                    <option key={u} value={u}>
+                      {u}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -266,7 +308,7 @@ export default function AuthPage() {
                   required
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="********"
                   className="w-full pl-10 pr-3 py-2.5 bg-secondary border border-border rounded font-sans text-sm focus:outline-none focus:border-amber transition-colors"
                 />
               </div>
@@ -290,7 +332,7 @@ export default function AuthPage() {
 
         {/* Footer note */}
         <p className="text-center text-xs text-muted-foreground mt-6 font-sans">
-          Tylko osoby pelnolethe (18+) moga sie zarejestrować
+          Tylko osoby pelnolethe (18+) moga sie zarejestrowac
         </p>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Barlow_Condensed, Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 export const dynamic = "force-dynamic"
@@ -31,6 +32,16 @@ export default function RootLayout({
     <html lang="pl" className={`${barlowCondensed.variable} ${inter.variable} bg-background dark`}>
       <body className="font-sans antialiased">
         {children}
+        <Toaster 
+          position="top-right" 
+          richColors 
+          theme="dark"
+          toastOptions={{
+            style: {
+              fontFamily: 'var(--font-inter)',
+            },
+          }}
+        />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
