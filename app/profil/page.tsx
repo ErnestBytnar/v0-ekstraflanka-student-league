@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { ArrowLeft, Edit2, LogOut, Award, Target } from 'lucide-react'
+import { ArrowLeft, Edit2, LogOut, Award, Target, GraduationCap } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 interface Profile {
   id: string
   nickname: string
   faculty: string
+  university: string
   points: number
   avatar_url?: string
 }
@@ -28,6 +30,7 @@ export default function ProfilPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [editNickname, setEditNickname] = useState('')
   const [editFaculty, setEditFaculty] = useState('')
+  const [editUniversity, setEditUniversity] = useState('')
   const [editError, setEditError] = useState('')
   const [editLoading, setEditLoading] = useState(false)
 
@@ -39,6 +42,19 @@ export default function ProfilPage() {
     'Ekonomia',
     'Prawo',
     'Medycyna',
+    'Inne',
+  ]
+
+  const universities = [
+    'Politechnika Rzeszowska',
+    'Uniwersytet Rzeszowski',
+    'WSIiZ Rzeszow',
+    'AGH Krakow',
+    'Politechnika Krakowska',
+    'UJ Krakow',
+    'Politechnika Warszawska',
+    'UW Warszawa',
+    'Politechnika Wroclawska',
     'Inne',
   ]
 
@@ -66,6 +82,7 @@ export default function ProfilPage() {
       setProfile(data)
       setEditNickname(data.nickname || '')
       setEditFaculty(data.faculty || '')
+      setEditUniversity(data.university || '')
       setLoading(false)
     }
 
@@ -90,6 +107,7 @@ export default function ProfilPage() {
         .update({
           nickname: editNickname,
           faculty: editFaculty,
+          university: editUniversity,
         })
         .eq('id', profile.id)
 
@@ -99,8 +117,10 @@ export default function ProfilPage() {
         ...profile,
         nickname: editNickname,
         faculty: editFaculty,
+        university: editUniversity,
       })
       setIsEditing(false)
+      toast.success('Profil zaktualizowany!')
     } catch (error: unknown) {
       setEditError(error instanceof Error ? error.message : 'Blad aktualizacji')
     } finally {
@@ -111,6 +131,7 @@ export default function ProfilPage() {
   const handleLogout = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
+    toast.success('Wylogowano, do zobaczenia!')
     router.push('/auth/login')
   }
 
@@ -118,6 +139,7 @@ export default function ProfilPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
+          <div className="w-8 h-8 border-2 border-amber border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="font-sans text-muted-foreground">Ladowanie profilu...</p>
         </div>
       </div>
@@ -176,9 +198,14 @@ export default function ProfilPage() {
                   <h2 className="font-display font-black text-2xl uppercase tracking-widest text-foreground mb-4">
                     {profile.nickname}
                   </h2>
-                  <p className="font-sans text-sm text-muted-foreground mb-1">
-                    <span className="text-foreground font-semibold">Wydzial:</span> {profile.faculty}
-                  </p>
+                  <div className="space-y-1">
+                    <p className="font-sans text-sm text-muted-foreground">
+                      <span className="text-foreground font-semibold">Uczelnia:</span> {profile.university || 'Nie podano'}
+                    </p>
+                    <p className="font-sans text-sm text-muted-foreground">
+                      <span className="text-foreground font-semibold">Wydzial:</span> {profile.faculty}
+                    </p>
+                  </div>
                 </div>
                 <button
                   onClick={() => setIsEditing(true)}
@@ -246,6 +273,28 @@ export default function ProfilPage() {
                     onChange={(e) => setEditNickname(e.target.value)}
                     className="w-full px-3 py-2.5 bg-secondary border border-border rounded font-sans text-sm focus:outline-none focus:border-amber transition-colors"
                   />
+                </div>
+
+                <div>
+                  <label className="block font-sans text-xs text-muted-foreground uppercase tracking-widest mb-2">
+                    Uczelnia
+                  </label>
+                  <div className="relative">
+                    <GraduationCap className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                    <select
+                      required
+                      value={editUniversity}
+                      onChange={(e) => setEditUniversity(e.target.value)}
+                      className="w-full pl-10 pr-3 py-2.5 bg-secondary border border-border rounded font-sans text-sm focus:outline-none focus:border-amber transition-colors appearance-none"
+                    >
+                      <option value="">Wybierz uczelnie</option>
+                      {universities.map((u) => (
+                        <option key={u} value={u}>
+                          {u}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div>
